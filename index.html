@@ -1,12 +1,256 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Static Template</title>
-  </head>
-  <body>
-    <h1>This is a static template, there is no bundler or bundling involved!</h1>
-  </body>
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+	<title>Static Template</title>
+</head>
+<body>
+	<br /> 
+	<b> &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;Tennis Tetris</b>
+	<br /><br />
+
+	<canvas id="gameCanvas" width="1070" height="600"></canvas>
+
+	<script type="text/javascript">
+		var canvas;
+		var canvasContext;
+		var ballX = 50;
+	  var ballY = 50; //or 200
+	  var ballSpeedX = 10;
+	  var ballSpeedY = 4;
+
+      // Now to have the paddle1 to move w.r.t mouse pointer
+      var paddle1Y = 250;
+      // For paddle 2
+      var paddle2Y = 250;
+      const PADDLE_THICKNESS = 10;
+      const PADDLE_HEIGHT = 100;
+
+
+      var player1Score = 0;
+      var player2Score = 0;
+      var winningScore = 10;
+
+      // variable to pause game
+      var showingWinScreen = false;
+
+
+      // NOW DEFINE THE FUNCTION THAT CAL THE MOUSE POSITION AND ASSIGN THE Y COORD to PADDLE.
+      function calculateMousePos(evt){
+      	// console.log("In calculateMousePos function");
+      	var rect = canvas.getBoundingClientRect();
+      	var root = document.documentElement;
+      	var mouseX = evt.clientX - rect.left - root.scrollLeft;
+      	var mouseY = evt.clientY - rect.top - root.scrollTop;
+      	return{
+      		x:mouseX,
+      		y:mouseY
+      	};
+      }
+
+      function handleMouseClick(evt){
+      	if(showingWinScreen){
+      		player1Score=0;
+      		player2Score=0;
+      		showingWinScreen = false; 
+      	}
+      }
+
+
+      window.onload = function() {
+      	console.log("Hellew World!");
+      	canvas = document.getElementById("gameCanvas");
+      	canvasContext = canvas.getContext("2d");
+
+ 
+        var framesPerSecond = 30;
+
+        setInterval(function() {
+        	moveEverything();
+        	drawEverything();
+        }, 1000 / framesPerSecond);
+ 
+        // Now the FUNCTION TO CALL THE MOVEMOUSE FUNCTION
+        canvas.addEventListener('mousemove',function(evt){
+        	var mousePos = calculateMousePos(evt);
+        
+        	paddle1Y = mousePos.y -  (PADDLE_HEIGHT/2);
+        	
+        });
+
+        // event listner for click to continue option
+
+        canvas.addEventListener('mousedown', handleMouseClick);
+        
+
+    }
+
+// function to have a computer play the next player
+function computerMovement(){
+	// This alone makes paddle jittery and we need to use the centre of the paddle to move.
+
+	// Now there is too much jitter coz each time the balllY value is closer its constantly -+6 the value of paddle2Y. So we keep threshold of 35 pixels below and above centre
+	var paddle2YCentre = paddle2Y + (PADDLE_HEIGHT/2);
+
+	if(paddle2YCentre < ballY-35){ 
+		paddle2Y+=6;
+
+	}
+	else if(paddle2YCentre > ballY+35){
+		paddle2Y-=6;
+	}
+}
+
+
+    // function to reset the ball 
+    function ballReset() {
+
+    	if(player1Score >= winningScore || player2Score >= winningScore){
+    		// player1Score = 0;
+    		// player2Score = 0;
+    		showingWinScreen = true;
+    	}
+
+
+    	ballSpeedX = -ballSpeedX;
+    	ballX = canvas.width / 2;
+    	ballY = canvas.height / 2;
+    } //// no change here, shown for context before function
+
+    function moveEverything() {
+
+    	if(showingWinScreen){
+    		return;
+    	}
+
+    	computerMovement();
+
+    	ballX = ballX + ballSpeedX;
+    	ballY = ballY + ballSpeedY;
+
+        /*if (ballX > canvas.width - 290) { //// remove these 3 lines, replaced by new logic below
+            ballSpeedX = -ballSpeedX;
+        }*/
+        if (ballX < 10) {
+            // ballSpeedX = -ballSpeedX; No need to add here as now we added this in ballReset() function.
+
+            // NOW ADD FUNCTIONALITY OF BOUNCING THE BALL IF ON PADDDLE : Note paddle1Y is top coord of paddle and paddle1y+paddleheight is bottom
+            if (ballY > paddle1Y && ballY < paddle1Y + PADDLE_HEIGHT) {
+            	ballSpeedX = -ballSpeedX;
+
+                // If you want the fumctionality of ball angle to change based on where it hits the paddle we need to change BallY speed
+                var deltaY = ballY - (paddle1Y + PADDLE_HEIGHT / 2);
+                // If we just give the value of deltaY to ballspeed, ball moves very rapidly, so we take only say 30% of speedF
+                ballSpeedY = deltaY * 0.35;
+            } else {
+            	player2Score++;
+            	
+            	ballReset();
+
+            }
+
+        } //// here is where if (ballX < 10) should end, add } here
+
+        if (ballX > canvas.width -290) {
+        	if (ballY > paddle2Y && ballY < paddle2Y + PADDLE_HEIGHT) {
+        		ballSpeedX = -ballSpeedX;
+
+        		var deltaY = ballY - (paddle2Y + PADDLE_HEIGHT / 2);
+        		ballSpeedY = deltaY * 0.35;
+
+
+        	} else {
+        		player1Score++;
+
+            	// In the reset fn put win condition
+            	ballReset();
+
+            }
+        }
+
+        //// } // this was ending if (ballX < 10) too low, remove it
+
+        if (ballY > canvas.height) {
+        	ballSpeedY = -ballSpeedY;
+        }
+        if (ballY < 10) {
+        	ballSpeedY = -ballSpeedY;
+        }
+    }
+
+    function drawEverything() { //// no change here, shown for context
+    	console.log("drawEverything called");
+
+    	colorRect(270, 0, canvas.width, canvas.height, "black");
+        // Draw a green player paddle Player 1
+
+
+        if(showingWinScreen){
+        	
+			canvasContext.font = "30px Verdana"
+
+        	if(player1Score >= winningScore){
+        		var gradient = canvasContext.createLinearGradient(0, 0, canvas.width, 0);
+        	gradient.addColorStop("0", "green");
+        	gradient.addColorStop("0.5", "green");
+        	gradient.addColorStop("1.0", "blue");
+			// Fill with gradient
+			canvasContext.fillStyle = gradient;
+				canvasContext.fillText("Player 1 WINS", (canvas.width/2)+10, 200);
+        	} else if (player2Score >= winningScore){
+        		var gradient = canvasContext.createLinearGradient(0, 0, canvas.width, 0);
+        	gradient.addColorStop("0", "blue");
+        	gradient.addColorStop("0.5", "blue");
+        	gradient.addColorStop("1.0", "green");
+			// Fill with gradient
+			canvasContext.fillStyle = gradient;
+        			canvasContext.fillText("Player 2 WINS", (canvas.width/2)+10, 200);
+        	}
+   //      	
+			canvasContext.font = "20px Verdana"
+			canvasContext.fillStyle = 'white';
+			canvasContext.fillText("Click to Continue", (canvas.width/2)+35, 450);
+			return;
+}
+
+
+colorRect(270, paddle1Y, PADDLE_THICKNESS, PADDLE_HEIGHT, "green");
+        // Draw a blue player paddle  Player 2 
+
+        colorRect(canvas.width - PADDLE_THICKNESS, paddle2Y, PADDLE_THICKNESS, PADDLE_HEIGHT, "blue");
+        // Draw the ball , now we need to make it round
+
+        // colorRect(270+ballX,200,10,10,'red');
+
+        // TO MAKE RED BALL
+
+        
+
+        // canvasContext.arc(280+ballX, 200, 10, 0, Math.PI*2, true);
+        // canvasContext.fill();
+        canvasContext.font = "10px Verdana"
+        colorCircle(280 + ballX, ballY, 10, "red");
+        canvasContext.fillText("player1", 370, 80);
+        canvasContext.fillText(player1Score, 370, 100);
+        canvasContext.fillText("player2", canvas.width-120, 80);
+        canvasContext.fillText(player2Score, canvas.width-120, 100);
+    }
+
+    function colorRect(leftX, topY, width, height, drawColor) {
+    	canvasContext.fillStyle = drawColor;
+    	canvasContext.fillRect(leftX, topY, width, height);
+    }
+
+    function colorCircle(centreX, centreY, radius, drawColor) {
+    	canvasContext.fillStyle = drawColor;
+    	canvasContext.beginPath();
+        // Parameters 1=> start point, 2=> centre start point, 3=> radius of circle, 4 => how many radians? pi is half circle, 2*pi is full, 5=> clockwise rotation of arc true, else false
+        canvasContext.arc(centreX, centreY, radius, 0, Math.PI * 2, true);
+        canvasContext.fill();
+    }
+</script>
+</body>
 </html>
+
